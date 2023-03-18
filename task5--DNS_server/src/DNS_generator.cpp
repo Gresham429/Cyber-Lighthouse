@@ -1,5 +1,6 @@
 #include "../include/DNS_generator.hpp"
 #include <boost/asio.hpp>
+#include <sstream>
 
 std::vector<uint8_t> DNSPacketBuilder::build_packet(const DNSPacket& packet){
 	std::vector<uint8_t> packetbin;
@@ -99,7 +100,7 @@ std::vector<uint8_t> DNSPacketBuilder::build_response(DNSResponse response){
 		size_t pos = packetbin.size();
 		size_t tmp = pos;
 
-		while(pos < name_len + pos){
+		while(pos < name_len + tmp){
 			size_t dot_pos = name.find(".", pos-tmp);
 			if(dot_pos == std::string::npos){
 				dot_pos = name_len;
@@ -116,10 +117,10 @@ std::vector<uint8_t> DNSPacketBuilder::build_response(DNSResponse response){
 		packetbin.push_back(0);
 
 		pos++;
-		packetbin.resize(packetbin.size() + 8);
+		packetbin.resize(packetbin.size() + 10);
 		uint16_t type = htons(answer.TYPE);
 		uint16_t class_ = htons(answer.CLASS);
-		uint32_t ttl = htons(answer.TTL);
+		uint32_t ttl = answer.TTL;
 		uint16_t rdlength = htons(answer.RDLENGTH);
 		memcpy(packetbin.data() + pos, &type, sizeof(uint16_t));
 		memcpy(packetbin.data() + pos + 2, &class_, sizeof(uint16_t));
@@ -129,20 +130,30 @@ std::vector<uint8_t> DNSPacketBuilder::build_response(DNSResponse response){
 
 		if(answer.TYPE == 1){
 			packetbin.resize(packetbin.size() + 4);
-			boost::asio::ip::address ip = boost::asio::ip::address::from_string(answer.RDATA);
-			boost::asio::ip::address_v4 ip_v4 = ip.to_v4();
+			std::cout << answer.RDATA << std::endl;
+			std::vector<uint8_t> bytes(4);
+			std::stringstream ss(answer.RDATA);
+			std::string byte_str;
 
-			std::vector<uint8_t> bytes(ip_v4.to_bytes().begin(), ip_v4.to_bytes().end());
+			while(std::getline(ss, byte_str, '.')){
+				int value = std::stoi(byte_str);
+				//std::cout << value << std::endl;
+				uint8_t byte_value = static_cast<uint8_t>(std::min(std::max(value, 0), 255));
+				//std::cout << byte_value << std::endl;
+				bytes.push_back(byte_value);
+			}
 
-			for(const auto& byte : bytes)
+			for(const auto& byte : bytes){
+				//std::cout << byte << " ";
 				packetbin.push_back(byte);
+			}
 		}else if(answer.TYPE == 5){
 			std::string cname = answer.RDATA;
 			size_t cname_len = cname.length();
 			size_t pos = packetbin.size();
 			size_t tmp = pos;
 
-			while(pos < name_len + pos){
+			while(pos < name_len + tmp){
 				size_t dot_pos = name.find(".", pos-tmp);
 				if(dot_pos == std::string::npos){
 					dot_pos = name_len;
@@ -162,7 +173,7 @@ std::vector<uint8_t> DNSPacketBuilder::build_response(DNSResponse response){
 			size_t pos = packetbin.size();
 			size_t tmp = pos;
 
-			while(pos < name_len + pos){
+			while(pos < name_len + tmp){
 				size_t dot_pos = name.find(".", pos-tmp);
 				if(dot_pos == std::string::npos){
 					dot_pos = name_len;
