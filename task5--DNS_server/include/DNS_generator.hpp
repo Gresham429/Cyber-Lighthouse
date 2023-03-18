@@ -11,6 +11,8 @@
 class DNSPacketBuilder{
 	public:	
 		std::vector<uint8_t> build_packet(const DNSPacket& packet);
+
+		std::vector<uint8_t> build_response(const DNSResponse response);
 };
 
 #endif

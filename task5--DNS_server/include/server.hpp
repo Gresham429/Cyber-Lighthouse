@@ -2,27 +2,26 @@
 #define SERVER_H
 
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <chrono>
 #include <thread>
-#include <map>
 #include <boost/asio.hpp>
 
 //define a WebServer class
 class WebServer{
 	public:
 		//receive the arguement
-		WebServer(const std::string& protocol, const int&port, int max_requests_per_second):
-			m_protocol(protocol), m_port(port), m_max_requests_per_second(max_requests_per_second) {}
+		WebServer(const int&port): m_port(port) {}
 
 		//receive the message
-		void receive();
+		std::string receive();
 
-		//
+		//send the message
+		void send(const std::string& message);
 	private:
-		std::string m_protocol;
 		int m_port;
-		int m_max_requests_per_second;
+		int client_port;
+		std::string client_ip;
 };
 
 #endif
